@@ -11,7 +11,7 @@ const dbConfig = {
   user: env["USER"],
   password: env["PASSWORD"],
   connectString: env["CONNECTIONSTRING"],
-  poolMax: Number(env["POOL"]),
+  poolMax: Number(env["POOL"])||10,
 };
 
 const defaultThreadPoolSize = 4;
@@ -36,44 +36,76 @@ function setDriver() {
 }
 
 function getQueryLimits(query) {
-    return `SELECT * FROM (SELECT A.*, ROWNUM AS MY_RNUM FROM ( ${query} ) A
+  return `SELECT * FROM (SELECT A.*, ROWNUM AS MY_RNUM FROM ( ${query} ) A
              WHERE ROWNUM <= :limit + :offset) WHERE MY_RNUM > :offset`;
 }
 
 export function simpleExecute(statement, binds = [], opts = {}) {
-    return new Promise(async (resolve, reject) => {
-        let conn;
-        let query;
-        opts.outFormat = oracledb.OBJECT;
-        opts.autoCommit = true;
-        try {
-            conn = await oracledb.getConnection();
-            if (binds.limit !== undefined) {
-                if (binds.offset == undefined) {
-                    binds.offset = 0;
-                }
-                query = getQueryLimits(statement);
-            } else {
-                query = statement;
-            }
-            const startTime = new Date(); //console.log("Inicio de la ejecución");
-            
-            console.log(query, binds, (new Date() - startTime)/1000);
-            const result = await conn.execute(query, binds, opts);
-            
-            resolve(result);
-        } catch (err) {
-            reject(err);
-        } finally {
-            if (conn) {
-                try {
-                    await conn.close();
-                } catch (err) {
-                    console.log(err);
-                }
-            }
+  return new Promise(async (resolve, reject) => {
+    let conn;
+    let query;
+    opts.outFormat = oracledb.OBJECT;
+    opts.autoCommit = true;
+    try {
+      conn = await oracledb.getConnection(dbConfig);
+      if (binds.limit !== undefined) {
+        if (binds.offset == undefined) {
+          binds.offset = 0;
         }
-    })
+        query = getQueryLimits(statement);
+      } else {
+        query = statement;
+      }
+      const startTime = new Date(); //console.log("Inicio de la ejecución");
+
+      console.log(query, binds, (new Date() - startTime) / 1000);
+      const result = await conn.execute(query, binds, opts);
+
+      resolve(result);
+    } catch (err) {
+      reject(err);
+    } finally {
+      if (conn) {
+        try {
+          await conn.close();
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    }
+  })
+}
+
+export async function run(statement, binds = [], opts = {}) {  
+  let conn;
+  let query;
+  opts.outFormat = oracledb.OBJECT;
+  opts.autoCommit = true;  
+  try {    
+    setDriver();
+    await oracledb.createPool(dbConfig);
+    conn = await oracledb.getConnection();
+    if (binds.limit !== undefined) {
+      if (binds.offset == undefined) {
+        binds.offset = 0;
+      }
+      query = getQueryLimits(statement);
+    } else {
+      query = statement;
+    }
+    const result = await conn.execute(query, binds, opts);
+    return result;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    if (conn) {
+      try {
+        await oracledb.getPool().close(0);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  }
 }
 
 export async function initDB() {
@@ -83,15 +115,16 @@ export async function initDB() {
 }
 
 export async function closeDB() {
-  await oracledb.getPool().close();
+  await oracledb.getPool().close(0);
   console.log("Desconexión a Base de datos Oracle exitosa.");
 }
 
 export async function checkConn() {
-  let conn = null;
+  let conn = null;  
   try {
     setDriver();
-    conn = await oracledb.getConnection(oraPool);
+    await oracledb.createPool(dbConfig);
+    conn = await oracledb.getConnection();
     console.log("connected to database");
   } catch (err) {
     console.error(err.message);
@@ -99,7 +132,7 @@ export async function checkConn() {
     if (conn) {
       try {
         // Always close connections
-        await conn.close();
+        await oracledb.getPool().close(0);
         console.log("close connection success");
       } catch (err) {
         console.error(err.message);

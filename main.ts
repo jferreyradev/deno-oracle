@@ -4,7 +4,7 @@ import queries from "./queries.json" assert { type: "json" };
 const port = 3000;
 const API_ROUTE = new URLPattern({ pathname: "/api/query/:id{/:ini}?{/:fin}?" });
 
-async function sentence(sql: string, binds) {
+async function sentence(sql: string, binds: []) {
   //console.log(binds);
   const result = await simpleExecute(sql, binds);
   return result;
