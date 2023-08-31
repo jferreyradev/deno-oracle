@@ -1,12 +1,14 @@
-import { load, oracledb } from "./deps.ts";
+import { oracledb, load } from "../deps.ts";
 
 // Configuración de Oracle
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
 // OBtiene las variables del archivo .env
-const env = await load();
 
 // Configuración de la conexión a la base de datos Oracle
+
+const env = await load();
+
 const dbConfig = {
   user: env["USER"],
   password: env["PASSWORD"],
@@ -14,12 +16,20 @@ const dbConfig = {
   poolMax: Number(env["POOL"])||10,
 };
 
+//let dbConfig;
+
 const defaultThreadPoolSize = 4;
 
 //process.env.UV_THREADPOOL_SIZE = dbConfig.poolMax + defaultThreadPoolSize;
 
+function setConfig(objconf) {
+  dbConfig = objconf;
+  setDriver();
+}
+
 function setDriver() {
 
+  //oracledb.initOracleClient({ libDir: dbConfig["lib"] });
   oracledb.initOracleClient({ libDir: env["LIB_ORA"] });
 
   /*
@@ -40,47 +50,12 @@ function getQueryLimits(query) {
              WHERE ROWNUM <= :limit + :offset) WHERE MY_RNUM > :offset`;
 }
 
-export function simpleExecute(statement, binds = [], opts = {}) {
-  return new Promise(async (resolve, reject) => {
-    let conn;
-    let query;
-    opts.outFormat = oracledb.OBJECT;
-    opts.autoCommit = true;
-    try {
-      conn = await oracledb.getConnection(dbConfig);
-      if (binds.limit !== undefined) {
-        if (binds.offset == undefined) {
-          binds.offset = 0;
-        }
-        query = getQueryLimits(statement);
-      } else {
-        query = statement;
-      }
-      const startTime = new Date(); //console.log("Inicio de la ejecución");
 
-      console.log(query, binds, (new Date() - startTime) / 1000);
-      const result = await conn.execute(query, binds, opts);
-
-      resolve(result);
-    } catch (err) {
-      reject(err);
-    } finally {
-      if (conn) {
-        try {
-          await conn.close();
-        } catch (err) {
-          console.log(err);
-        }
-      }
-    }
-  })
-}
-
-export async function run(statement, binds = [], opts = {}) {  
+async function exec(statement, binds = [], opts = {}) {  
   let conn;
   let query;
   opts.outFormat = oracledb.OBJECT;
-  opts.autoCommit = true;  
+  opts.autoCommit = true;
   try {    
     setDriver();
     await oracledb.createPool(dbConfig);
@@ -108,42 +83,39 @@ export async function run(statement, binds = [], opts = {}) {
   }
 }
 
-export async function initDB() {
+async function open() {
   setDriver();
   await oracledb.createPool(dbConfig);
   console.log("Conexión a Base de datos Oracle establecida.");
 }
 
-export async function closeDB() {
+async function close() {
   await oracledb.getPool().close(0);
   console.log("Desconexión a Base de datos Oracle exitosa.");
 }
 
-export async function checkConn() {
+async function checkConn() {
   let conn = null;  
   try {
     setDriver();
     await oracledb.createPool(dbConfig);
     conn = await oracledb.getConnection();
-    console.log("connected to database");
+    console.log("connected to database");    
   } catch (err) {
-    console.error(err.message);
+    console.error(err.message);    
   } finally {
     if (conn) {
       try {
         // Always close connections
         await oracledb.getPool().close(0);
         console.log("close connection success");
+        return true;
       } catch (err) {
         console.error(err.message);
+        return false;
       }
     }
   }
 }
 
-/*
-module.exports.initDB = initDB;
-module.exports.closeDB = closeDB;
-module.exports.checkConn = checkConn;
-module.exports.simpleExecute = simpleExecute;
-*/
+export { open, close, checkConn, exec, setConfig };

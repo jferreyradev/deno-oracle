@@ -1,4 +1,6 @@
-import { checkConn, closeDB, initDB, simpleExecute, serve } from "./deps.ts";
+import { serve } from "./deps.ts";
+import { open, exec } from "./db/orcl.js";
+
 import queries from "./queries.json" assert { type: "json" };
 
 const port = 3000;
@@ -6,16 +8,15 @@ const API_ROUTE = new URLPattern({ pathname: "/api/query/:id{/:ini}?{/:fin}?" })
 
 async function sentence(sql: string, binds: []) {
   //console.log(binds);
-  const result = await simpleExecute(sql, binds);
+  const result = await exec(sql, binds);
   return result;
 }
 
 async function handler(req: Request): Response {
-  //console.log(req.url)
 
   const match = API_ROUTE.exec(req.url);
 
-  console.log(match);
+  //console.log(match);
 
   if (match) {
     //console.log(match);
@@ -25,7 +26,7 @@ async function handler(req: Request): Response {
     const fin = match.pathname.groups.fin || 0;
 
     //const body = `Book ${id}`;
-    console.log(`Variables ini: ${ini}, ${fin}`);
+    //console.log(`Variables ini: ${ini}, ${fin}`);
     if (id) {
       let resBody;
       if (id == -1) {
@@ -45,7 +46,10 @@ async function handler(req: Request): Response {
         return new Response(JSON.stringify(resBody), {
           status: 200,
           headers: {
-            "content-type": "application/json; charset=utf-8",
+            "Access-Control-Allow-Origin":"*",
+            "Access-Control-Allow-Methods":"GET, POST, PUT, DELETE",
+            "Access-Control-Allow-Headers":"Origin, X-Requested-With, Content-Type, Accept",
+            "content-type": "application/json; charset=utf-8"
           },
         });
       }
@@ -61,12 +65,12 @@ async function handler(req: Request): Response {
 
 Deno.addSignalListener("SIGINT", async () => {
   console.log("interrupted!");
-  await closeDB();
+  await close();
   Deno.exit();
 });
 
 console.log(`HTTP webserver running. Access it at: http://localhost:${port}/`);
 
 // INICIA DB Y SERVICIO API (en este caso)
-initDB();
+open();
 serve(handler, { port });
