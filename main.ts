@@ -1,5 +1,37 @@
-import { serve } from "./deps.ts";
-import { open, exec } from "./db/orcl.js";
+//import { serve } from "./deps.ts";
+import { controlProc } from "./controllers/controlProc.ts";
+
+const port = 3000;
+const PROC_ROUTE = new URLPattern({ pathname: "/api/:obj/:id*" });
+
+async function handler(req: Request): Response {
+  const match = PROC_ROUTE.exec(req.url);
+
+  const rows = await controlProc(match);
+  if (rows.length||0 > 0) {
+    return new Response(JSON.stringify(rows),
+      {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
+          "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
+          "content-type": "application/json; charset=utf-8"
+        }
+      });
+  }
+  return new Response("Not found (try /api/proc/1)", { status: 404 });
+}
+
+Deno.addSignalListener("SIGINT", async () => {
+  console.log("interrupted!");
+  await close();
+  Deno.exit();
+});
+
+Deno.serve(handler, { port });
+
+/*
 
 import queries from "./queries.json" assert { type: "json" };
 
@@ -46,9 +78,9 @@ async function handler(req: Request): Response {
         return new Response(JSON.stringify(resBody), {
           status: 200,
           headers: {
-            "Access-Control-Allow-Origin":"*",
-            "Access-Control-Allow-Methods":"GET, POST, PUT, DELETE",
-            "Access-Control-Allow-Headers":"Origin, X-Requested-With, Content-Type, Accept",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
+            "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
             "content-type": "application/json; charset=utf-8"
           },
         });
@@ -74,3 +106,5 @@ console.log(`HTTP webserver running. Access it at: http://localhost:${port}/`);
 // INICIA DB Y SERVICIO API (en este caso)
 open();
 serve(handler, { port });
+
+*/
