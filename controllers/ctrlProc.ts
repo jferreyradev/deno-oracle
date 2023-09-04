@@ -1,7 +1,6 @@
-
 import { exec } from "../db/orcl.js";
 
-export async function controlProc(match: any) {
+export async function ctrlProc(match: any) {
     if (match) {
       const id = match.pathname.groups.id || -1;
       const obj = match.pathname.groups.obj;

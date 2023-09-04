@@ -16,8 +16,6 @@ const dbConfig = {
   poolMax: Number(env["POOL"])||10,
 };
 
-//let dbConfig;
-
 const defaultThreadPoolSize = 4;
 
 //process.env.UV_THREADPOOL_SIZE = dbConfig.poolMax + defaultThreadPoolSize;
@@ -27,10 +25,10 @@ function setConfig(objconf) {
   setDriver();
 }
 
-function setDriver() {
+async function setDriver() {
 
   //oracledb.initOracleClient({ libDir: dbConfig["lib"] });
-  oracledb.initOracleClient({ libDir: env["LIB_ORA"] });
+  await oracledb.initOracleClient({ libDir: env["LIB_ORA"] });
 
   /*
   if ( process.platform === "win32") {
@@ -57,7 +55,7 @@ async function exec(statement, binds = [], opts = {}) {
   opts.outFormat = oracledb.OBJECT;
   opts.autoCommit = true;
   try {    
-    setDriver();
+    await setDriver();
     await oracledb.createPool(dbConfig);
     conn = await oracledb.getConnection();
     if (binds.limit !== undefined) {
@@ -84,7 +82,7 @@ async function exec(statement, binds = [], opts = {}) {
 }
 
 async function open() {
-  setDriver();
+  await setDriver();
   await oracledb.createPool(dbConfig);
   console.log("Conexión a Base de datos Oracle establecida.");
 }

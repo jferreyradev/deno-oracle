@@ -1,13 +1,24 @@
 //import { serve } from "./deps.ts";
-import { controlProc } from "./controllers/controlProc.ts";
+import { ctrlProc } from "./controllers/ctrlProc.ts";
+import { ctrlReportes } from "./controllers/ctrlReportes.ts";
 
 const port = 3000;
-const PROC_ROUTE = new URLPattern({ pathname: "/api/:obj/:id*" });
+
+const PROC_ROUTE = new URLPattern({ pathname: "/api/:obj/:id*{/:ini}?{/:fin}?" });
+const REPORTE_ROUTE = new URLPattern({ pathname: "/api/reporte{s}?/:id?{/download}*{/:ini}?{/:fin}?" });
 
 async function handler(req: Request): Response {
-  const match = PROC_ROUTE.exec(req.url);
+  const matchProc = PROC_ROUTE.exec(req.url);
+  const matchRepor = REPORTE_ROUTE.exec(req.url);
 
-  const rows = await controlProc(match);
+  let rows:any[]=[];
+
+  if (matchRepor) {
+    rows = await ctrlReportes(matchRepor);    
+  }else if (matchProc){
+    rows = await ctrlProc(matchProc);
+  }  
+
   if (rows.length||0 > 0) {
     return new Response(JSON.stringify(rows),
       {
@@ -46,16 +57,16 @@ async function sentence(sql: string, binds: []) {
 
 async function handler(req: Request): Response {
 
-  const match = API_ROUTE.exec(req.url);
+  const matchProc = API_ROUTE.exec(req.url);
 
-  //console.log(match);
+  //console.log(matchProc);
 
-  if (match) {
-    //console.log(match);
+  if (matchProc) {
+    //console.log(matchProc);
 
-    const id = match.pathname.groups.id;
-    const ini = match.pathname.groups.ini || 0;
-    const fin = match.pathname.groups.fin || 0;
+    const id = matchProc.pathname.groups.id;
+    const ini = matchProc.pathname.groups.ini || 0;
+    const fin = matchProc.pathname.groups.fin || 0;
 
     //const body = `Book ${id}`;
     //console.log(`Variables ini: ${ini}, ${fin}`);
