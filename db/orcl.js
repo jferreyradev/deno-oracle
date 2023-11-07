@@ -118,4 +118,4 @@ async function checkConn() {
   }
 }
 
-export { open, close, checkConn, exec, setConfig };
+export { open, close, checkConn, exec, setConfig, oracledb };
