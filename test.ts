@@ -5,12 +5,6 @@ interface Query {
     sql: string;
 }
 
-/*await run(
-    `BEGIN 
-        WORKFLOW.SET_PARAM(to_Date('01/08/2023','dd/mm/yyyy'), 1, 0, -1);
-    END;` );*/
-
-
 async function run() {   
 
     try {
@@ -23,20 +17,17 @@ async function run() {
         );*/
 
 
-        //const result = await exec(`SELECT * FROM WORKFLOW.PROC_CAB`);
+        const result = await exec (`SELECT * FROM DET_PRESUP_ANUAL WHERE HIJO = 1`);
 
-        const result = await exec (`INSERT INTO WORKFLOW.TODOITEM (ID, DESCRIPTION) VALUES (87,'DENO TEST')`);
+        //console.log(result);
 
-        console.log(result);
+        //checkConn();
 
-        /*const rs = result.resultSet;
-        let row;
-        let i = 1;
-
-        while ((row = await rs.getRow())) {
-            console.log("getRow(): row " + i++);
-            console.log(row);
-        }   */   
+        const rs = result.rows;
+        for (let index = 0; index < rs.length; index++) {
+            const element = rs[index];
+            console.log(rs)            
+        }
 
     } catch (err) {
         console.error(err);

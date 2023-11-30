@@ -17,8 +17,8 @@ async function handler(req: Request): Response {
     rows = await ctrlReportes(matchRepor);    
   }else if (matchProc){
     rows = await ctrlProc(matchProc);
-  }  
-
+  }
+  
   if (rows.length||0 > 0) {
     return new Response(JSON.stringify(rows),
       {

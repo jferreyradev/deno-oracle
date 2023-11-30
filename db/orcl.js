@@ -48,7 +48,6 @@ function getQueryLimits(query) {
              WHERE ROWNUM <= :limit + :offset) WHERE MY_RNUM > :offset`;
 }
 
-
 async function exec(statement, binds = [], opts = {}) {  
   let conn;
   let query;
