@@ -8,18 +8,12 @@ interface Query {
 async function run() {   
 
     try {
-       /*
-        const result = await exec(`SELECT * FROM WORKFLOW.PROC_CAB`,  [], 
-                {
-                    resultSet: true,             // return a ResultSet (default is false)
-                    // fetchArraySize: 100       // internal buffer allocation size for tuning
-                }
-        );*/
+      
+        const result = await exec (`SELECT * FROM DET_PRESUP_ANUAL`);
 
+        console.log(result.rows);
 
-        const result = await exec (`SELECT * FROM DET_PRESUP_ANUAL WHERE HIJO = 1`);
-
-        //console.log(result);
+        await Deno.writeTextFile("presup.json", JSON.stringify(result.rows));
 
         //checkConn();
 
